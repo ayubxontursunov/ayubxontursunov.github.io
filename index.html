@@ -1,25 +1,467 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Qwen Math Assistant</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen Math Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 0.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2em;
+            font-size: 1.1em;
+        }
+        
+        .status {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .status.loading {
+            background: #fff3cd;
+            border-color: #ffecb5;
+            color: #856404;
+        }
+        
+        .status.ready {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .input-section {
+            margin-bottom: 20px;
+        }
+        
+        .question-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .question-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .answer-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 150px;
+        }
+        
+        .answer-content {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+        
+        .examples {
+            margin-top: 30px;
+        }
+        
+        .examples h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px;
+        }
+        
+        .example-btn {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .example-btn:hover {
+            background: #dee2e6;
+            border-color: #adb5bd;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 2em;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 2em;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .example-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>🧮 Qwen Math Assistant</h1>
-  <textarea id="question" placeholder="Enter your math problem..."></textarea>
-  <button onclick="send()">Ask</button>
-  <pre id="answer"></pre>
+    <div class="container">
+        <h1 class="title">🧮 Qwen Math Assistant</h1>
+        <p class="description">Your AI-powered mathematical problem solver. Get step-by-step solutions!</p>
+        
+        <div id="status" class="status">
+            🚀 Initializing connection to Qwen Math Assistant...
+        </div>
+        
+        <div class="input-section">
+            <textarea 
+                id="question" 
+                class="question-input"
+                placeholder="Enter your math problem here... (e.g., 'Solve: 2x + 5 = 15')"
+                rows="4"
+            ></textarea>
+        </div>
+        
+        <div class="button-group">
+            <button id="askBtn" class="btn btn-primary" onclick="askQuestion()">
+                <span class="loading-spinner" id="spinner"></span>
+                💬 Ask Question
+            </button>
+            <button class="btn btn-secondary" onclick="clearAll()">
+                🗑️ Clear
+            </button>
+            <button class="btn btn-secondary" onclick="checkStatus()">
+                🔄 Check Status
+            </button>
+        </div>
+        
+        <div class="answer-section">
+            <div id="answer" class="answer-content">Ready for your math questions! 🤖</div>
+        </div>
+        
+        <div class="examples">
+            <h3>📚 Try these examples:</h3>
+            <div class="example-grid">
+                <button class="example-btn" onclick="setExample('Solve: 2x + 5 = 15')">
+                    Solve: 2x + 5 = 15
+                </button>
+                <button class="example-btn" onclick="setExample('What is 25 + 37?')">
+                    What is 25 + 37?
+                </button>
+                <button class="example-btn" onclick="setExample('Calculate: 8 × 9')">
+                    Calculate: 8 × 9
+                </button>
+                <button class="example-btn" onclick="setExample('Find: √64')">
+                    Find: √64
+                </button>
+                <button class="example-btn" onclick="setExample('Simplify: 3/4 + 1/6')">
+                    Simplify: 3/4 + 1/6
+                </button>
+                <button class="example-btn" onclick="setExample('What is 15% of 80?')">
+                    What is 15% of 80?
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🤖 Powered by Qwen Language Model | 🚀 Hosted on Hugging Face Spaces</p>
+            <p>💡 <strong>Tip:</strong> Ask specific math questions for best results!</p>
+        </div>
+    </div>
 
-  <script>
-    async function send() {
-      const question = document.getElementById("question").value;
-      const response = await fetch("https://USERNAME-SpaceName.hf.space/run/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: [question] })
-      });
-      const result = await response.json();
-      document.getElementById("answer").textContent = result.data[0];
-    }
-  </script>
+    <script>
+        // Configuration
+        const API_BASE_URL = 'https://simmonsc-qwen-lm.hf.space';
+        
+        // UI Elements
+        const questionInput = document.getElementById('question');
+        const answerDiv = document.getElementById('answer');
+        const statusDiv = document.getElementById('status');
+        const askBtn = document.getElementById('askBtn');
+        const spinner = document.getElementById('spinner');
+        
+        // State
+        let isLoading = false;
+        
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            checkStatus();
+            questionInput.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    askQuestion();
+                }
+            });
+        });
+        
+        // Set loading state
+        function setLoading(loading) {
+            isLoading = loading;
+            askBtn.disabled = loading;
+            
+            if (loading) {
+                spinner.style.display = 'inline-block';
+                askBtn.innerHTML = '<span class="loading-spinner" id="spinner"></span>⏳ Processing...';
+            } else {
+                spinner.style.display = 'none';
+                askBtn.innerHTML = '💬 Ask Question';
+            }
+        }
+        
+        // Update status display
+        function updateStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        // Check API status
+        async function checkStatus() {
+            try {
+                updateStatus('🔄 Checking connection...', 'loading');
+                
+                // Try to ping the API
+                const response = await fetch(`${API_BASE_URL}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    updateStatus('✅ Connected to Qwen Math Assistant! Ready for questions.', 'ready');
+                } else {
+                    updateStatus('⚠️ Service is starting up. Please wait a moment...', 'loading');
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+                updateStatus('❌ Cannot connect to service. Please check your internet connection.', 'error');
+            }
+        }
+        
+        // Ask question function
+        async function askQuestion() {
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                answerDiv.textContent = '⚠️ Please enter a math problem first.';
+                return;
+            }
+            
+            if (isLoading) return;
+            
+            setLoading(true);
+            answerDiv.textContent = '🤔 Thinking...';
+            
+            try {
+                // First try the chat interface endpoint
+                let response = await fetch(`${API_BASE_URL}/run/chat_interface`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data: [question, [], 150] // message, history, max_tokens
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.data && result.data[0]) {
+                    // Extract the latest response from chat history
+                    const chatHistory = result.data[0];
+                    if (chatHistory.length > 0) {
+                        const lastExchange = chatHistory[chatHistory.length - 1];
+                        const answer = lastExchange[1]; // Response part
+                        answerDiv.textContent = answer;
+                    } else {
+                        answerDiv.textContent = '❌ No response received. Please try again.';
+                    }
+                } else {
+                    throw new Error('Invalid response format');
+                }
+                
+            } catch (error) {
+                console.error('API call failed:', error);
+                
+                // Fallback: try direct prediction endpoint
+                try {
+                    const response = await fetch(`${API_BASE_URL}/run/predict`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            data: [question]
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        answerDiv.textContent = result.data ? result.data[0] : 'No response received.';
+                    } else {
+                        throw error;
+                    }
+                    
+                } catch (fallbackError) {
+                    console.error('Fallback failed:', fallbackError);
+                    answerDiv.textContent = `❌ Error: ${error.message}\n\nPossible issues:\n• Model may still be loading\n• Service temporarily unavailable\n• Network connection problem\n\nPlease try again in a moment.`;
+                    updateStatus('❌ Connection failed. Service may be starting up...', 'error');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // Set example question
+        function setExample(example) {
+            questionInput.value = example;
+            questionInput.focus();
+        }
+        
+        // Clear all content
+        function clearAll() {
+            questionInput.value = '';
+            answerDiv.textContent = 'Ready for your math questions! 🤖';
+            questionInput.focus();
+        }
+        
+        // Handle Enter key in textarea
+        questionInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+    </script>
 </body>
 </html>
